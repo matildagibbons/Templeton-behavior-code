@@ -1,0 +1,135 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import PhotoImage
+import os
+import sys
+import glob
+import subprocess
+import PIL
+from PIL import Image, ImageTk
+
+
+# Function to get the path where the image will be saved
+def get_image_path(mouse_name, plot_number):
+    base_path = "C:\\Users\\teenspirit\\Desktop\\Behavior\\Tilda\\Data\\Saved graphs" 
+    mouse_folder = os.path.join(base_path, mouse_name)  # Create a folder for each mouse
+    os.makedirs(mouse_folder, exist_ok=True)  # Create the folder if it doesn't exist
+
+    # Construct the full path for the plot
+    plot_path = os.path.join(mouse_folder, f"plot{plot_number}.png")
+    return plot_path
+
+# Function to display both plots in the GUI
+def display_plots_in_gui(mouse_name):
+    # Get the paths for both plots
+    output_path1 = get_image_path(mouse_name, 1)  # Path for the first plot
+    output_path2 = get_image_path(mouse_name, 2)  # Path for the second plot
+
+    # Load and display the first plot
+    img1 = Image.open(output_path1)
+    img1 = img1.resize((800, 600 ), Image.Resampling.LANCZOS)
+    tk_img1 = ImageTk.PhotoImage(img1)
+
+    label1 = tk.Label(root, image=tk_img1)
+    label1.image = tk_img1  # Keep reference to the image
+    label1.grid(row=1, column= 1)
+
+    # Load and display the second plot
+    img2 = Image.open(output_path2)
+    img2 = img2.resize((800, 600), Image.Resampling.LANCZOS)
+    tk_img2 = ImageTk.PhotoImage(img2)
+
+    label2 = tk.Label(root, image=tk_img2)
+    label2.image = tk_img2  # Keep reference to the image
+    label2.grid(row=1, column=2, padx=20)
+    
+# Function to be called when the button is clicked
+def on_generate_button_click():
+    mouse_name = mouse_name_entry.get()  # Get the mouse name from the entry field
+    display_plots_in_gui(mouse_name)
+
+def get_newest_file(mouse_name):
+    # Set the directory path based on the mouse name
+    directory = f'C:/Users/teenspirit/Desktop/Behavior/Tilda/Data/{mouse_name}'  # Adjust your directory path accordingly
+    
+    # Use glob to search for .hdf5 files in the specified directory
+    hdf5_files = glob.glob(os.path.join(directory, "*.hdf5"))
+    
+    if not hdf5_files:
+        return None  # No .hdf5 files found
+    
+    # Get the most recent file based on modification time
+    newest_file = max(hdf5_files, key=os.path.getmtime)
+    text_file_path = 'newest_file.txt'
+    with open(text_file_path, 'w') as file:
+        file.write(newest_file)
+    
+    # Return the path of the newest file (also saved in the text file)
+    return newest_file
+
+def save_mouse_name_to_file(mouse_name):
+    directory = r'C:\\Users\\teenspirit\\Desktop\\Behavior\\Tilda\\Data\\'
+    file_path = os.path.join(directory, 'mouse_name.txt')
+    try:
+        with open(file_path, "w") as file:
+            file.write(mouse_name)
+        print(f"Mouse name '{mouse_name}' saved successfully.")
+    except Exception as e:
+        print(f"Error saving mouse name: {e}")
+
+
+def run_notebook():
+    mouse_name = mouse_name_entry.get().strip()
+    
+    if not mouse_name:
+        messagebox.showerror("Error", "Please enter a mouse name.")
+        return
+
+    # Save the mouse name to a text file
+    save_mouse_name_to_file(mouse_name)
+    
+    # Get the newest file path and save it
+    newest_file = get_newest_file(mouse_name)
+    if newest_file:
+        print(f"Newest file: {newest_file}")
+    else:
+        messagebox.showerror("Error", "No .hdf5 files found for the specified mouse.")
+        return
+    
+    # Command to execute the notebook
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Behavior_analysis.py")
+    notebook_command = f'"{sys.executable}" "{script_path}"'
+
+    try:
+        subprocess.run(notebook_command, check=True, shell=True)
+        messagebox.showinfo("Success", "Analysis run successfully!")
+    except subprocess.CalledProcessError:
+        messagebox.showerror("Error", "Failed to run analysis")
+        
+
+# Create the Tkinter window
+root = tk.Tk()
+root.title("Behavior Analysis Tool")
+root.geometry("1400x800")  # Adjust the size as needed
+
+# Set the background color of the main window to dark green
+root.config(bg="darkolivegreen4")
+
+label_mouse = tk.Label(root, text="Mouse Name:", font=("Arial", 25), bg="darkolivegreen4", fg="gray10")
+label_mouse.grid(row=2, column=3, padx=0, pady=(0,0))
+mouse_name_entry = tk.Entry(root, font=("Arial", 14), bg="white", fg="black")  # Light background for text entry
+mouse_name_entry.grid(row=2, column=3, padx=0, pady=(60,0))
+
+# Create a button to generate and display the plots
+generate_button = tk.Button(root, text="Display Plots", command=on_generate_button_click, 
+                            width=20, height=5, font=("Loma", 25),
+                            padx=20, pady=20, bg="orchid2", fg="gray10", borderwidth=8,relief="groove")
+generate_button.grid(row=3, column=2, padx=20, pady=40)
+
+run_button= tk.Button(root, text="Run Analysis", command=run_notebook, 
+                            width=20, height=5, font=("Loma", 25),
+                            padx=20, pady=20, bg="darkorange2", fg="gray10", borderwidth=8,relief="groove")
+run_button.grid(row=3, column=4, padx=20, pady=40)
+
+# Start the Tkinter event loop
+root.mainloop()

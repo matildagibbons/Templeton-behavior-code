@@ -1,0 +1,26 @@
+# Conda environment
+.conda/
+.condarc
+envs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Other virtual environments
+venv/
+.venv/
+env/
+
+# Build files
+build/
+dist/
+*.egg-info/
+
+# Secrets
+.env
+
+# Mac & editor clutter
+.DS_Store
+.vscode/
